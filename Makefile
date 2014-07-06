@@ -13,7 +13,3 @@ all:	$(TXTS)
 
 clean:
 	rm -f $(TXTS)
-
-debug:
-	echo CSVS=$(CSVS)
-	echo TXTS=$(TXTS)
