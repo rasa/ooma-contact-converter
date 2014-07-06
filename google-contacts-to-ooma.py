@@ -13,10 +13,11 @@ def fatal(*objs):
   print("FATAL:", *objs, file=sys.stderr)
   sys.exit(1)
 
-if len(sys.argv) != 2:
-  sys.exit("Usage: " + sys.argv[0] + " filename.csv")
+if len(sys.argv) != 3:
+  sys.exit("Usage: " + sys.argv[0] + " input.csv output.txt")
 
-name = sys.argv[1]
+infile = sys.argv[1]
+outfile = sys.argv[2]
 
 # fields in ooma contact export csv file
 ofields = [
@@ -147,13 +148,13 @@ gtype_map = {
 'Work': 'Business Phone',
 }
 
-print('"' + '","'.join(ofields) + '"')
+out = '"' + '","'.join(ofields) + '"' + "\n"
 
 gmap = {}
 
 header = False
 line_no = 0
-with open(name, 'rb') as csvfile:
+with open(infile, 'rb') as csvfile:
   csvreader = csv.reader(csvfile)
   for row in csvreader:
     line_no = line_no + 1
@@ -167,7 +168,7 @@ with open(name, 'rb') as csvfile:
 
     for gname, oname in go_map.items():
       if not gmap.has_key(gname):
-        fatal(name, ': does not contain field', '"' + gname + '"')
+        fatal(infile, ': does not contain field', '"' + gname + '"')
 
       gindex = gmap[gname]
       oindex = omap[oname]
@@ -175,7 +176,7 @@ with open(name, 'rb') as csvfile:
 
     if output[ofirst_index] == ''  and output[olast_index] == '':
       if not gmap.has_key('Organization 1 - Name'):
-        fatal(name, ': does not contain field "Organization 1 - Name"')
+        fatal(infile, ': does not contain field "Organization 1 - Name"')
 
       gindex = gmap["Organization 1 - Name"]
       company = row[gindex]
@@ -212,7 +213,7 @@ with open(name, 'rb') as csvfile:
         break
       gvalue_name = 'Phone %d - Value' % (no)
       if not gmap.has_key(gvalue_name):
-        error(name, ': line', line_no, ': phone', no, ': does not contain field: ', '"' + gvalue_name + '":', output[0])
+        error(infile, ': line', line_no, ': phone', no, ': does not contain field: ', '"' + gvalue_name + '":', output[0])
         continue
 
       gtype_index = gmap[gtype_name]
@@ -227,7 +228,7 @@ with open(name, 'rb') as csvfile:
       if gtype_map.has_key(gtype):
         ofield = gtype_map[gtype]
       else:
-        error(name, ': line', line_no, ': phone', no, ': unknown phone type:', '"' + gtype + '", using "Other Phone":', output[0])
+        error(infile, ': line', line_no, ': phone', no, ': unknown phone type:', '"' + gtype + '", using "Other Phone":', output[0])
         ofield = 'Other Phone'
 
       phones = field.split(':::')
@@ -256,18 +257,21 @@ with open(name, 'rb') as csvfile:
           break;
 
       if len(new) == 0:
-        warning(name, ': line', line_no, ': phone', no, gtype, ': no phone number found:', output[0])
+        warning(infile, ': line', line_no, ': phone', no, gtype, ': no phone number found:', output[0])
         continue
 
       oindex = omap[ofield]
       if phones_found < 4:
         output[oindex] = new
       else:
-        error(name, ': line', line_no, ': phone', no, gtype, new, ': ignoring number, as Ooma has a 4 phone number limit:', output[0])
+        error(infile, ': line', line_no, ': phone', no, gtype, new, ': ignoring number, as Ooma has a 4 phone number limit:', output[0])
 
       phones_found += 1
 
     if phones_found == 0:
       continue
 
-    print('"' + ('","'.join(output)) + '"')
+    out += '"' + ('","'.join(output)) + '"' + "\n"
+
+with open(outfile, 'wb') as fp:
+  fp.write(out)
